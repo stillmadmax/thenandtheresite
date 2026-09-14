@@ -1,0 +1,11 @@
+title: Then & There
+description: Then & There - die iPhone-App, die zeigt, was du an diesem Tag in früheren Jahren fotografiert hast
+lang: de
+
+# The landing pages are static HTML and pass through untouched.
+# Only the text pages (privacy, support, legal notice) use the Jekyll layout.
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

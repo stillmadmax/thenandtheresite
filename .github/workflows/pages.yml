@@ -1,0 +1,49 @@
+# Builds and deploys the site itself (Pages source: "GitHub Actions", not a branch).
+# The postal address and the contact e-mail are NOT in the repo: they live in the
+# repository secrets KONTAKT_ADRESSE ("Straße Nr<br>PLZ Ort") and KONTAKT_EMAIL and are
+# substituted into the legal pages at build time. The repo holds the placeholders
+# %%KONTAKT_ADRESSE%% and %%KONTAKT_EMAIL%%.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Insert contact details from secrets
+        env:
+          ADR: ${{ secrets.KONTAKT_ADRESSE }}
+          MAIL: ${{ secrets.KONTAKT_EMAIL }}
+        run: |
+          if [ -z "$ADR" ] || [ -z "$MAIL" ]; then
+            echo "::error::Secrets KONTAKT_ADRESSE and KONTAKT_EMAIL are required - placeholders would stay on the live site."
+            exit 1
+          fi
+          perl -0pi -e 's/%%KONTAKT_ADRESSE%%/$ENV{ADR}/g; s/%%KONTAKT_EMAIL%%/$ENV{MAIL}/g' \
+            datenschutz.md impressum.md support.md en/privacy.md en/imprint.md en/support.md
+      - uses: actions/jekyll-build-pages@v1
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
